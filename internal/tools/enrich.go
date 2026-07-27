@@ -85,7 +85,9 @@ func toEnrichedPart(r apiEnrichResponse) EnrichedPart {
 		Cached:        r.Cached,
 	}
 	for _, param := range p.Parameters {
-		out.Parameters = append(out.Parameters, Parameter{Name: param.Name, Value: param.Value, Units: param.Units})
+		// Field-identical to Parameter; the conversion breaks at compile time
+		// if the API's shape ever drifts from ours.
+		out.Parameters = append(out.Parameters, Parameter(param))
 	}
 	for _, s := range p.Suppliers {
 		out.Suppliers = append(out.Suppliers, SupplierOffer{

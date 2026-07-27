@@ -266,9 +266,7 @@ func AddPickList(srv *mcp.Server, client *api.Client) {
 			})
 		}
 		for _, u := range pl.Unmatched {
-			res.Unmatched = append(res.Unmatched, UnmatchedLine{
-				Refs: u.Refs, Value: u.Value, Quantity: u.Quantity,
-			})
+			res.Unmatched = append(res.Unmatched, UnmatchedLine(u))
 		}
 
 		switch {
