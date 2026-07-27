@@ -1,0 +1,21 @@
+# Go build output
+/mcp
+/firebin-mcp
+*.test
+*.out
+
+# Local env overrides
+.env
+.env.local
+
+# IDE
+.vscode/
+.idea/
+*.swp
+
+# OS junk
+.DS_Store
+
+# Persisted first-run MCP token — dev runs point FIREBIN_MCP_DATA_DIR here
+/.local/
+/data/
