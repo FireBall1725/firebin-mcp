@@ -3,9 +3,29 @@ name: Release
 # Run from Actions → Release → Run workflow. The version is computed from the
 # date and the last tag as YY.M.revision; nothing in the source tree carries a
 # version string.
+#
+# Two channels:
+#
+#   rc     — YY.M.rev-rc.N. Builds a real, pullable image so ArgoCD can deploy
+#            it, but leaves :latest alone and marks the GitHub Release as a
+#            pre-release. GitHub's /releases/latest excludes pre-releases, so an
+#            update checker stays quiet while a change is being tested.
+#   stable — YY.M.rev. Moves the :latest image tag and publishes a normal
+#            GitHub Release, so anything watching for updates sees it.
+#
+# An rc and the stable release that follows it share a version number: cutting
+# rcs for 26.8.0 and then releasing stable gives 26.8.0, suffix dropped.
 on:
   workflow_dispatch:
     inputs:
+      channel:
+        description: "Release channel"
+        required: true
+        default: "rc"
+        type: choice
+        options:
+          - rc      # pre-release: image only, no :latest, no update notification
+          - stable  # full release: moves :latest, published as a release
       bump:
         description: "Version bump type"
         required: true
@@ -44,27 +64,58 @@ jobs:
         id: version
         env:
           BUMP: ${{ inputs.bump }}
+          CHANNEL: ${{ inputs.channel }}
         run: |
           set -euo pipefail
           YY=$(date -u +%y)
           MM=$(date -u +%-m)
           PREFIX="${YY}.${MM}"
 
-          if [ "$BUMP" = "major" ]; then
+          # Only fully-numeric tags count as stable. Without the filter a
+          # pre-release like v26.7.11-rc.2 is picked up by `sort -V | tail -1`,
+          # and taking the text after its last dot yields "2", so the next
+          # stable computes as 26.7.3 and collides with a version already out.
+          LAST_REV=$(git tag --list "v${PREFIX}.*" \
+            | grep -E "^v${PREFIX}\.[0-9]+$" \
+            | sed "s/^v${PREFIX}\.//" \
+            | sort -n | tail -n1 || true)
+
+          if [ "$BUMP" = "major" ] || [ -z "$LAST_REV" ]; then
             REV=0
           else
-            LAST=$(git tag --list "v${PREFIX}.*" | sort -V | tail -n1 || true)
-            if [ -z "$LAST" ]; then
-              REV=0
-            else
-              LAST_REV=${LAST##*.}
-              REV=$((LAST_REV + 1))
-            fi
+            REV=$((LAST_REV + 1))
+          fi
+          BASE="${PREFIX}.${REV}"
+
+          if [ "$CHANNEL" = "rc" ]; then
+            # Successive rcs for the same base increment; the stable release
+            # that follows keeps the base and drops the suffix.
+            LAST_RC=$(git tag --list "v${BASE}-rc.*" \
+              | sed "s/^v${BASE}-rc\.//" \
+              | sort -n | tail -n1 || true)
+            VERSION="${BASE}-rc.$(( ${LAST_RC:-0} + 1 ))"
+          else
+            VERSION="$BASE"
           fi
 
-          VERSION="${PREFIX}.${REV}"
           echo "version=$VERSION" >> "$GITHUB_OUTPUT"
-          echo "Releasing version: $VERSION"
+          echo "Releasing ${CHANNEL} version: $VERSION"
+
+      - name: Resolve image tags
+        id: tags
+        env:
+          VERSION: ${{ steps.version.outputs.version }}
+          CHANNEL: ${{ inputs.channel }}
+        run: |
+          set -euo pipefail
+          IMAGE=ghcr.io/fireball1725/firebin-mcp
+          # :latest must only ever point at a stable release. Moving it for an
+          # rc would hand a pre-release to anyone pulling by that tag.
+          if [ "$CHANNEL" = "stable" ]; then
+            printf 'tags<<EOF\n%s:%s\n%s:latest\nEOF\n' "$IMAGE" "$VERSION" "$IMAGE" >> "$GITHUB_OUTPUT"
+          else
+            printf 'tags<<EOF\n%s:%s\nEOF\n' "$IMAGE" "$VERSION" >> "$GITHUB_OUTPUT"
+          fi
 
       - name: Set up QEMU
         uses: docker/setup-qemu-action@v3
@@ -89,9 +140,7 @@ jobs:
           platforms: linux/amd64,linux/arm64
           build-args: |
             VERSION=${{ steps.version.outputs.version }}
-          tags: |
-            ghcr.io/fireball1725/firebin-mcp:${{ steps.version.outputs.version }}
-            ghcr.io/fireball1725/firebin-mcp:latest
+          tags: ${{ steps.tags.outputs.tags }}
 
       - name: Tag release
         if: ${{ inputs.dry-run == false }}
@@ -107,3 +156,6 @@ jobs:
           tag_name: v${{ steps.version.outputs.version }}
           name: v${{ steps.version.outputs.version }}
           generate_release_notes: true
+          # A pre-release is excluded from /releases/latest, which is what keeps
+          # an update checker quiet while a change is still being tested.
+          prerelease: ${{ inputs.channel == 'rc' }}
