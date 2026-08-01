@@ -139,7 +139,7 @@ type recentActivityArgs struct {
 // AddRecentActivity wires the recent_activity tool.
 func AddRecentActivity(srv *mcp.Server, client *api.Client) {
 	mcp.AddTool(srv, &mcp.Tool{
-		Name: "recent_activity",
+		Name:        "recent_activity",
 		Description: "List the most recent stock movements across the whole inventory, newest first. Answers 'what changed lately' and 'what did I book in today'.",
 	}, func(ctx context.Context, _ *mcp.CallToolRequest, args recentActivityArgs) (*mcp.CallToolResult, movementsResult, error) {
 		limit := args.Limit

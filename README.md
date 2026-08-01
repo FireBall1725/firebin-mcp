@@ -28,6 +28,7 @@ Traffic in the other direction is gated separately. Clients connecting to this s
 | Tool | What it answers |
 | --- | --- |
 | `search_parts` | Find parts by name, keywords, IPN, or manufacturer part number |
+| `search_parts_by_spec` | Find parts by package and parameter value, with unit-aware matching: "220 ohm" never matches 220 pF |
 | `get_part` | One part in full: specs, every MPN with distributor SKUs and price breaks, per-bin stock |
 | `list_locations` | Every bin, drawer, and cabinet with its full path and barcode |
 | `location_contents` | What is in one bin, by location id or scanned barcode |
@@ -39,6 +40,7 @@ Traffic in the other direction is gated separately. Clients connecting to this s
 | `lookup_mpn` | Distributor data for a part number without writing anything |
 | `list_projects` | Hardware projects and their board counts |
 | `get_project` | One project with its boards, revisions, and BOM line counts |
+| `get_board` | One board's bill of materials line by line, with the manufacturer part number on each |
 | `pick_list` | Whether a board can be built, and what to pull from which bin |
 
 ### Write

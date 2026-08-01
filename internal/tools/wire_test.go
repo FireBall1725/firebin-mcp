@@ -28,25 +28,31 @@ func TestCapList(t *testing.T) {
 	}
 }
 
-func TestFormatPriceBreaks(t *testing.T) {
-	cases := []struct {
-		name string
-		in   []apiPriceBreak
-		want string
-	}{
-		{"empty", nil, ""},
-		{
-			"integer quantities keep no decimal tail",
-			[]apiPriceBreak{{Quantity: 1, Price: 0.42, Currency: "CAD"}, {Quantity: 100, Price: 0.31, Currency: "CAD"}},
-			"1: 0.4200 CAD, 100: 0.3100 CAD",
-		},
+// Price breaks stay structured, with the currency on each tier.
+//
+// They were flattened into "1: 0.4200 CAD, 100: 0.3100 CAD", which is fewer
+// tokens and invites the mistake it was hiding: a caller comparing two
+// suppliers has to do arithmetic on these, and Nexar stores whatever currency
+// each seller reported, so two rows on the same part are not always in the
+// same one.
+func TestToPriceBreaks(t *testing.T) {
+	if got := toPriceBreaks(nil); got != nil {
+		t.Errorf("empty input gave %+v, want nil", got)
 	}
-	for _, c := range cases {
-		t.Run(c.name, func(t *testing.T) {
-			if got := formatPriceBreaks(c.in); got != c.want {
-				t.Errorf("formatPriceBreaks() = %q, want %q", got, c.want)
-			}
-		})
+	got := toPriceBreaks([]apiPriceBreak{
+		{Quantity: 1, Price: 0.42, Currency: "CAD"},
+		{Quantity: 100, Price: 0.31, Currency: "USD"},
+	})
+	if len(got) != 2 {
+		t.Fatalf("got %d breaks, want 2", len(got))
+	}
+	if got[0].Quantity != 1 || got[0].Price != 0.42 || got[0].Currency != "CAD" {
+		t.Errorf("first break = %+v", got[0])
+	}
+	// The differing currency has to survive: it is the whole reason these are
+	// not one number each.
+	if got[1].Currency != "USD" {
+		t.Errorf("second break currency = %q, want USD", got[1].Currency)
 	}
 }
 

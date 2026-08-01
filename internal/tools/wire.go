@@ -4,8 +4,6 @@
 package tools
 
 import (
-	"fmt"
-	"strconv"
 	"strings"
 )
 
@@ -18,31 +16,35 @@ import (
 // returning raw rows would flood the context window.
 
 type apiPart struct {
-	ID                  string            `json:"id"`
-	CategoryID          *string           `json:"category_id"`
-	VariantOf           *string           `json:"variant_of"`
-	Name                string            `json:"name"`
-	Description         *string           `json:"description"`
-	IPN                 *string           `json:"ipn"`
-	Package             *string           `json:"package"`
-	Keywords            *string           `json:"keywords"`
-	Barcode             *string           `json:"barcode"`
-	ImagePath           *string           `json:"image_path"`
-	IsTemplate          bool              `json:"is_template"`
-	IsAssembly          bool              `json:"is_assembly"`
-	MinimumStock        float64           `json:"minimum_stock"`
-	DefaultLocationID   *string           `json:"default_location_id"`
-	TotalStock          float64           `json:"total_stock"`
-	VariantCount        int               `json:"variant_count"`
-	PrimaryMPN          *string           `json:"primary_mpn"`
-	PrimaryManufacturer *string           `json:"primary_manufacturer"`
-	PrimaryLocation     *string           `json:"primary_location"`
-	PrimaryLocationID   *string           `json:"primary_location_id"`
-	Parameters          []apiPartParam    `json:"parameters"`
-	ManufacturerParts   []apiManufPart    `json:"manufacturer_parts"`
-	Alternatives        []apiAlternative  `json:"alternatives"`
-	Variants            []apiPart         `json:"variants"`
-	CategoryName        *string           `json:"category_name"`
+	ID          string  `json:"id"`
+	CategoryID  *string `json:"category_id"`
+	VariantOf   *string `json:"variant_of"`
+	Name        string  `json:"name"`
+	Description *string `json:"description"`
+	IPN         *string `json:"ipn"`
+	Package     *string `json:"package"`
+	Keywords    *string `json:"keywords"`
+	Barcode     *string `json:"barcode"`
+	ImagePath   *string `json:"image_path"`
+	IsTemplate  bool    `json:"is_template"`
+	IsAssembly  bool    `json:"is_assembly"`
+	// ReferenceOnly marks a part recorded but not owned: researched, or worth
+	// remembering, but never stocked. Without it such a part reads as "in
+	// stock: 0", which is sold out rather than never held.
+	ReferenceOnly       bool             `json:"reference_only"`
+	MinimumStock        float64          `json:"minimum_stock"`
+	DefaultLocationID   *string          `json:"default_location_id"`
+	TotalStock          float64          `json:"total_stock"`
+	VariantCount        int              `json:"variant_count"`
+	PrimaryMPN          *string          `json:"primary_mpn"`
+	PrimaryManufacturer *string          `json:"primary_manufacturer"`
+	PrimaryLocation     *string          `json:"primary_location"`
+	PrimaryLocationID   *string          `json:"primary_location_id"`
+	Parameters          []apiPartParam   `json:"parameters"`
+	ManufacturerParts   []apiManufPart   `json:"manufacturer_parts"`
+	Alternatives        []apiAlternative `json:"alternatives"`
+	Variants            []apiPart        `json:"variants"`
+	CategoryName        *string          `json:"category_name"`
 }
 
 type apiPartParam struct {
@@ -52,11 +54,11 @@ type apiPartParam struct {
 }
 
 type apiManufPart struct {
-	ID               string           `json:"id"`
-	ManufacturerName *string          `json:"manufacturer_name"`
-	MPN              string           `json:"mpn"`
-	Description      *string          `json:"description"`
-	DatasheetURL     *string          `json:"datasheet_url"`
+	ID               string            `json:"id"`
+	ManufacturerName *string           `json:"manufacturer_name"`
+	MPN              string            `json:"mpn"`
+	Description      *string           `json:"description"`
+	DatasheetURL     *string           `json:"datasheet_url"`
 	SupplierParts    []apiSupplierPart `json:"supplier_parts"`
 }
 
@@ -99,18 +101,18 @@ type apiCategory struct {
 }
 
 type apiStockItem struct {
-	ID           string   `json:"id"`
-	PartID       string   `json:"part_id"`
-	PartName     string   `json:"part_name"`
-	LocationID   *string  `json:"location_id"`
-	LocationName *string  `json:"location_name"`
-	Quantity     float64  `json:"quantity"`
-	Status       string   `json:"status"`
-	Batch        *string  `json:"batch"`
-	Serial       *string  `json:"serial"`
-	Note         *string  `json:"note"`
-	Barcode      *string  `json:"barcode"`
-	Name         *string  `json:"name"`
+	ID            string   `json:"id"`
+	PartID        string   `json:"part_id"`
+	PartName      string   `json:"part_name"`
+	LocationID    *string  `json:"location_id"`
+	LocationName  *string  `json:"location_name"`
+	Quantity      float64  `json:"quantity"`
+	Status        string   `json:"status"`
+	Batch         *string  `json:"batch"`
+	Serial        *string  `json:"serial"`
+	Note          *string  `json:"note"`
+	Barcode       *string  `json:"barcode"`
+	Name          *string  `json:"name"`
 	PurchasePrice *float64 `json:"purchase_price"`
 }
 
@@ -187,16 +189,29 @@ type Parameter struct {
 	Units string `json:"units,omitempty"`
 }
 
-// SupplierOffer is a distributor SKU with its price breaks flattened to a
-// single readable string — a nested price-break array per supplier per
-// manufacturer part is a lot of tokens for little conversational value.
+// SupplierOffer is a distributor SKU with its price breaks.
+//
+// The breaks are structured rather than flattened into "1: 0.42, 10: 0.31".
+// A caller comparing suppliers has to do arithmetic on these, and it has to
+// know the currency of each: Digi-Key and Mouser honour the instance currency
+// setting but Nexar stores whatever each seller reported, so two rows on the
+// same part can be in different currencies and comparing them as bare numbers
+// compares different things. The flattened string was cheaper in tokens and
+// invited exactly that mistake.
 type SupplierOffer struct {
-	Supplier  string  `json:"supplier"`
-	SKU       string  `json:"sku"`
-	MOQ       float64 `json:"moq,omitempty"`
-	Packaging string  `json:"packaging,omitempty"`
-	Pricing   string  `json:"pricing,omitempty"`
-	URL       string  `json:"url,omitempty"`
+	Supplier    string       `json:"supplier"`
+	SKU         string       `json:"sku"`
+	MOQ         float64      `json:"moq,omitempty"`
+	Packaging   string       `json:"packaging,omitempty"`
+	PriceBreaks []PriceBreak `json:"price_breaks,omitempty"`
+	URL         string       `json:"url,omitempty"`
+}
+
+// PriceBreak is one quantity tier, with the currency it is quoted in.
+type PriceBreak struct {
+	Quantity float64 `json:"quantity"`
+	Price    float64 `json:"price"`
+	Currency string  `json:"currency,omitempty"`
 }
 
 // ManufacturerPart is one MPN on a part, with its distributor offers.
@@ -292,11 +307,11 @@ func toPartDetail(p apiPart, stock []apiStockItem) PartDetail {
 		}
 		for _, sp := range mp.SupplierParts {
 			m.Suppliers = append(m.Suppliers, SupplierOffer{
-				Supplier: sp.SupplierName,
-				SKU:      sp.SKU,
-				MOQ:      derefFloat(sp.MOQ),
-				Pricing:  formatPriceBreaks(sp.Pricing),
-				URL:      deref(sp.URL),
+				Supplier:    sp.SupplierName,
+				SKU:         sp.SKU,
+				MOQ:         derefFloat(sp.MOQ),
+				PriceBreaks: toPriceBreaks(sp.Pricing),
+				URL:         deref(sp.URL),
 			})
 		}
 		d.Manufacturer = append(d.Manufacturer, m)
@@ -326,21 +341,18 @@ func derefFloat(f *float64) float64 {
 	return *f
 }
 
-// formatPriceBreaks flattens [{qty,price,currency}] into "1: $0.42, 10: $0.31".
-func formatPriceBreaks(breaks []apiPriceBreak) string {
+// toPriceBreaks keeps each tier as a number with its own currency.
+func toPriceBreaks(breaks []apiPriceBreak) []PriceBreak {
 	if len(breaks) == 0 {
-		return ""
+		return nil
 	}
-	parts := make([]string, 0, len(breaks))
+	out := make([]PriceBreak, 0, len(breaks))
 	for _, b := range breaks {
-		parts = append(parts, fmt.Sprintf("%s: %.4f %s", trimFloat(b.Quantity), b.Price, b.Currency))
+		// Field-identical to apiPriceBreak; the conversion breaks at compile
+		// time if the API's shape ever drifts from ours.
+		out = append(out, PriceBreak(b))
 	}
-	return strings.Join(parts, ", ")
-}
-
-// trimFloat renders a quantity without trailing zeros ("100", not "100.0000").
-func trimFloat(f float64) string {
-	return strconv.FormatFloat(f, 'f', -1, 64)
+	return out
 }
 
 // truncateText caps a free-text field so a long provider description can't

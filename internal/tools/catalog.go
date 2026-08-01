@@ -105,7 +105,7 @@ type inventoryStatsResult struct {
 // AddInventoryStats wires the inventory_stats tool.
 func AddInventoryStats(srv *mcp.Server, client *api.Client) {
 	mcp.AddTool(srv, &mcp.Tool{
-		Name: "inventory_stats",
+		Name:        "inventory_stats",
 		Description: "Summary numbers for the whole inventory: how many distinct parts and variants, how many storage locations, how many parts are below their minimum, total units on hand, and total inventory value.",
 	}, func(ctx context.Context, _ *mcp.CallToolRequest, _ inventoryStatsArgs) (*mcp.CallToolResult, inventoryStatsResult, error) {
 		s, err := api.Get[apiStats](ctx, client, "/stats")
