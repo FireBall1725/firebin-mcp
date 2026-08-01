@@ -16,24 +16,24 @@ import (
 // ─── Enrichment wire shapes ──────────────────────────────────────────────────
 
 type apiEnrichResponse struct {
-	Found  bool           `json:"found"`
-	Cached bool           `json:"cached"`
+	Found  bool            `json:"found"`
+	Cached bool            `json:"cached"`
 	Part   apiEnrichedPart `json:"part"`
 }
 
 type apiEnrichedPart struct {
-	MPN          string               `json:"mpn"`
-	Name         string               `json:"name"` // already cleaned server-side
-	Description  string               `json:"description"`
-	Manufacturer string               `json:"manufacturer"`
-	Category     string               `json:"category"`
-	Package      string               `json:"package"`
-	DatasheetURL string               `json:"datasheet_url"`
-	ImageURL     string               `json:"image_url"`
-	Parameters   []apiEnrichedParam   `json:"parameters"`
+	MPN          string                `json:"mpn"`
+	Name         string                `json:"name"` // already cleaned server-side
+	Description  string                `json:"description"`
+	Manufacturer string                `json:"manufacturer"`
+	Category     string                `json:"category"`
+	Package      string                `json:"package"`
+	DatasheetURL string                `json:"datasheet_url"`
+	ImageURL     string                `json:"image_url"`
+	Parameters   []apiEnrichedParam    `json:"parameters"`
 	Suppliers    []apiEnrichedSupplier `json:"suppliers"`
-	Alternatives []apiAlternative     `json:"alternatives"`
-	Source       string               `json:"source"`
+	Alternatives []apiAlternative      `json:"alternatives"`
+	Source       string                `json:"source"`
 }
 
 type apiEnrichedParam struct {
@@ -56,18 +56,18 @@ type apiEnrichedSupplier struct {
 // EnrichedPart is what lookup_mpn hands back: the distributor's view of a
 // part, with nothing written to the inventory.
 type EnrichedPart struct {
-	MPN          string           `json:"mpn"`
-	SuggestedName string          `json:"suggested_name,omitempty"`
-	Manufacturer string           `json:"manufacturer,omitempty"`
-	Description  string           `json:"description,omitempty"`
-	Category     string           `json:"category,omitempty"`
-	Package      string           `json:"package,omitempty"`
-	Datasheet    string           `json:"datasheet,omitempty"`
-	Parameters   []Parameter      `json:"parameters,omitempty"`
-	Suppliers    []SupplierOffer  `json:"suppliers,omitempty"`
-	Alternatives []apiAlternative `json:"alternatives,omitempty"`
-	Source       string           `json:"source,omitempty"`
-	Cached       bool             `json:"cached,omitempty"`
+	MPN           string           `json:"mpn"`
+	SuggestedName string           `json:"suggested_name,omitempty"`
+	Manufacturer  string           `json:"manufacturer,omitempty"`
+	Description   string           `json:"description,omitempty"`
+	Category      string           `json:"category,omitempty"`
+	Package       string           `json:"package,omitempty"`
+	Datasheet     string           `json:"datasheet,omitempty"`
+	Parameters    []Parameter      `json:"parameters,omitempty"`
+	Suppliers     []SupplierOffer  `json:"suppliers,omitempty"`
+	Alternatives  []apiAlternative `json:"alternatives,omitempty"`
+	Source        string           `json:"source,omitempty"`
+	Cached        bool             `json:"cached,omitempty"`
 }
 
 func toEnrichedPart(r apiEnrichResponse) EnrichedPart {
@@ -91,11 +91,11 @@ func toEnrichedPart(r apiEnrichResponse) EnrichedPart {
 	}
 	for _, s := range p.Suppliers {
 		out.Suppliers = append(out.Suppliers, SupplierOffer{
-			Supplier:  s.Name,
-			SKU:       s.SKU,
-			Packaging: s.Packaging,
-			Pricing:   formatPriceBreaks(s.Prices),
-			URL:       s.URL,
+			Supplier:    s.Name,
+			SKU:         s.SKU,
+			Packaging:   s.Packaging,
+			PriceBreaks: toPriceBreaks(s.Prices),
+			URL:         s.URL,
 		})
 	}
 	return out

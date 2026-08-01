@@ -56,6 +56,7 @@ import (
 func RegisterAll(srv *mcp.Server, client *api.Client) {
 	// Parts
 	AddSearchParts(srv, client)
+	AddSearchPartsBySpec(srv, client)
 	AddGetPart(srv, client)
 	AddUpdatePart(srv, client)
 
@@ -85,5 +86,6 @@ func RegisterAll(srv *mcp.Server, client *api.Client) {
 	// Projects
 	AddListProjects(srv, client)
 	AddGetProject(srv, client)
+	AddGetBoard(srv, client)
 	AddPickList(srv, client)
 }

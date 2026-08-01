@@ -38,14 +38,14 @@ type apiBoard struct {
 }
 
 type apiPickList struct {
-	BoardID    string              `json:"board_id"`
-	BoardName  string              `json:"board_name"`
-	Quantity   int                 `json:"quantity"`
-	Copies     int                 `json:"copies"`
-	TotalUnits float64             `json:"total_units"`
-	Entries    []apiPickEntry      `json:"entries"`
-	Shortfalls []apiPickShortfall  `json:"shortfalls"`
-	Unmatched  []apiPickUnmatched  `json:"unmatched"`
+	BoardID    string             `json:"board_id"`
+	BoardName  string             `json:"board_name"`
+	Quantity   int                `json:"quantity"`
+	Copies     int                `json:"copies"`
+	TotalUnits float64            `json:"total_units"`
+	Entries    []apiPickEntry     `json:"entries"`
+	Shortfalls []apiPickShortfall `json:"shortfalls"`
+	Unmatched  []apiPickUnmatched `json:"unmatched"`
 }
 
 type apiPickEntry struct {
@@ -65,9 +65,12 @@ type apiPickShortfall struct {
 }
 
 type apiPickUnmatched struct {
-	Refs     string `json:"refs"`
-	Value    string `json:"value"`
-	Quantity int    `json:"quantity"` // total needed across the whole build
+	Refs         string `json:"refs"`
+	Value        string `json:"value"`
+	Quantity     int    `json:"quantity"` // total needed across the whole build
+	Footprint    string `json:"footprint,omitempty"`
+	MPN          string `json:"mpn,omitempty"`
+	Manufacturer string `json:"manufacturer,omitempty"`
 }
 
 // ─── Projections ─────────────────────────────────────────────────────────────
@@ -133,7 +136,7 @@ type listProjectsResult struct {
 // AddListProjects wires the list_projects tool.
 func AddListProjects(srv *mcp.Server, client *api.Client) {
 	mcp.AddTool(srv, &mcp.Tool{
-		Name: "list_projects",
+		Name:        "list_projects",
 		Description: "List the hardware projects with how many boards each contains. Board ids are not included here; call get_project to get them, then pass one to pick_list.",
 	}, func(ctx context.Context, _ *mcp.CallToolRequest, _ listProjectsArgs) (*mcp.CallToolResult, listProjectsResult, error) {
 		projects, err := api.Get[[]apiProject](ctx, client, "/projects")
@@ -204,10 +207,19 @@ type Shortfall struct {
 
 // UnmatchedLine is a BOM line that was never linked to an inventory part, so
 // it cannot be picked or checked at all.
+// UnmatchedLine is a bill-of-materials line with no inventory part behind it.
+//
+// It carries what the BOM knows about the part, not just the reference and the
+// value: this is the line you go and buy, and the manufacturer part number is
+// usually sitting right on it. Dropping it meant a caller asked the user for a
+// part number that was already in the data.
 type UnmatchedLine struct {
-	Refs     string `json:"refs,omitempty"`
-	Value    string `json:"value,omitempty"`
-	Quantity int    `json:"quantity,omitempty"`
+	Refs         string `json:"refs,omitempty"`
+	Value        string `json:"value,omitempty"`
+	Quantity     int    `json:"quantity,omitempty"`
+	Footprint    string `json:"footprint,omitempty"`
+	MPN          string `json:"mpn,omitempty"`
+	Manufacturer string `json:"manufacturer,omitempty"`
 }
 
 type pickListResult struct {

@@ -116,20 +116,20 @@ func AddGetPart(srv *mcp.Server, client *api.Client) {
 // back a fetched part (which carries id, created_at, total_stock, variants…)
 // is a 400.
 type partRequest struct {
-	CategoryID        *string          `json:"category_id"`
-	VariantOf         *string          `json:"variant_of"`
-	Name              string           `json:"name"`
-	Description       *string          `json:"description"`
-	IPN               *string          `json:"ipn"`
-	Package           *string          `json:"package"`
-	Keywords          *string          `json:"keywords"`
-	Barcode           *string          `json:"barcode"`
-	ImagePath         *string          `json:"image_path"`
-	IsTemplate        bool             `json:"is_template"`
-	IsAssembly        bool             `json:"is_assembly"`
-	MinimumStock      float64          `json:"minimum_stock"`
-	DefaultLocationID *string          `json:"default_location_id"`
-	Parameters        []paramRequest   `json:"parameters"`
+	CategoryID        *string        `json:"category_id"`
+	VariantOf         *string        `json:"variant_of"`
+	Name              string         `json:"name"`
+	Description       *string        `json:"description"`
+	IPN               *string        `json:"ipn"`
+	Package           *string        `json:"package"`
+	Keywords          *string        `json:"keywords"`
+	Barcode           *string        `json:"barcode"`
+	ImagePath         *string        `json:"image_path"`
+	IsTemplate        bool           `json:"is_template"`
+	IsAssembly        bool           `json:"is_assembly"`
+	MinimumStock      float64        `json:"minimum_stock"`
+	DefaultLocationID *string        `json:"default_location_id"`
+	Parameters        []paramRequest `json:"parameters"`
 }
 
 type paramRequest struct {
