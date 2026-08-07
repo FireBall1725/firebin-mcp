@@ -1,7 +1,11 @@
 # syntax=docker/dockerfile:1
 
 # ── Build stage ───────────────────────────────────────────────────────────────
-FROM golang:1.26 AS build
+# Pinned to the BUILD platform, not the target. Without this, buildx runs the
+# whole arm64 leg under QEMU emulation, which is tolerable for a monthly
+# release and wasteful for a per-merge nightly. Go cross-compiles natively, so
+# the compiler runs on amd64 and only the output is arm64.
+FROM --platform=$BUILDPLATFORM golang:1.26 AS build
 WORKDIR /src
 
 COPY go.mod go.sum ./
@@ -12,7 +16,9 @@ COPY . .
 # VERSION is injected by the release workflow. Left unset for local builds,
 # where internal/version computes "{YY}.{M}.DEV" at startup instead.
 ARG VERSION
-RUN CGO_ENABLED=0 GOOS=linux go build -trimpath \
+# TARGETARCH is supplied by buildx per platform leg.
+ARG TARGETARCH
+RUN CGO_ENABLED=0 GOOS=linux GOARCH=${TARGETARCH} go build -trimpath \
     -ldflags="-s -w ${VERSION:+-X 'github.com/firelabsca/firebin-mcp/internal/version.Version=${VERSION}'}" \
     -o /out/firebin-mcp ./cmd/mcp
 
