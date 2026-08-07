@@ -1,0 +1,33 @@
+name: Nightly
+
+# Every merge to main publishes an image and nothing else: no git tag, no
+# GitHub Release, no Discord post. It exists so the homelab and anyone testing
+# have something pullable without cutting a release.
+#
+# Pull the floating tag:
+#
+#   docker pull ghcr.io/fireball1725/firebin-mcp:nightly
+#
+# Pin the immutable one (26.8.1-nightly.202608072241) in
+# homelab-applications/firebin-mcp/values.yaml. ArgoCD syncs on a git manifest
+# change, so a moved tag would deploy nothing.
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+concurrency:
+  group: nightly-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  nightly:
+    permissions:
+      contents: read
+      packages: write
+    uses: FireBall1725/workflows/.github/workflows/release-container.yml@v1
+    with:
+      image: ghcr.io/fireball1725/firebin-mcp
+      channel: nightly
+    secrets: inherit
