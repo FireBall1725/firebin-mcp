@@ -1,0 +1,34 @@
+# Drives the Discord post in #releases. See
+# https://github.com/FireBall1725/workflows/blob/main/templates/release-announce.yml.example
+# for the full field list and placeholders.
+
+project:
+  name: FireBin MCP
+  emoji: "🔥"
+  footer: "FireBin · self-hosted electronics parts inventory"
+
+channels:
+  stable:
+    announce: true
+    colour: "0x2ECC71"
+    prefix: ""
+  rc:
+    announce: true
+    colour: "0xF1C40F"
+    prefix: "Release candidate — "
+  nightly:
+    announce: false
+
+getting_started: |
+  Point an MCP client at the server, or pull it:
+  ```
+  docker pull {{image}}
+  ```
+
+links:
+  - name: Source
+    url: https://github.com/{{repo}}
+  - name: FireBin
+    url: https://firebin.fireball1725.ca/
+  - name: Changes
+    url: "{{compare_url}}"
