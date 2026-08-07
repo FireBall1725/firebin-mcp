@@ -27,9 +27,14 @@ indent_size = 4
 [Makefile]
 indent_style = tab
 
-# Two trailing spaces are a hard line break in Markdown.
+# Two trailing spaces are a hard line break in Markdown, and indentation is
+# structural: content nested under "1. " is indented three spaces, which is
+# correct and is not a multiple of two. Leaving indent_size set here fails every
+# README that contains a fenced block inside a numbered list.
 [*.md]
 trim_trailing_whitespace = false
+indent_size = unset
+indent_style = unset
 
 # Files whose bytes belong to a tool, not to us. Xcode rewrites pbxproj on
 # every project change and will happily undo anything done here.
