@@ -105,6 +105,12 @@ func Patch[Req, Resp any](ctx context.Context, c *Client, path string, req Req) 
 	return send[Req, Resp](ctx, c, http.MethodPatch, path, req)
 }
 
+// Put mirrors Post for PUT requests. Used by the endpoints that replace a whole
+// sub-collection at once, such as a part's tags.
+func Put[Req, Resp any](ctx context.Context, c *Client, path string, req Req) (Resp, error) {
+	return send[Req, Resp](ctx, c, http.MethodPut, path, req)
+}
+
 func send[Req, Resp any](ctx context.Context, c *Client, method, path string, req Req) (Resp, error) {
 	var out Resp
 	buf, err := json.Marshal(req)

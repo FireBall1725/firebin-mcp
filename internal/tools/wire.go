@@ -45,6 +45,17 @@ type apiPart struct {
 	Alternatives        []apiAlternative `json:"alternatives"`
 	Variants            []apiPart        `json:"variants"`
 	CategoryName        *string          `json:"category_name"`
+	Tags                []apiTag         `json:"tags"`
+}
+
+// apiTag is a tag as the API returns it. Tags are the informal names a part
+// answers to besides its own, e.g. "Qwiic" on a JST SH 1.0 mm header.
+type apiTag struct {
+	ID        string  `json:"id"`
+	Name      string  `json:"name"`
+	Slug      string  `json:"slug"`
+	Colour    *string `json:"colour"`
+	PartCount int     `json:"part_count"`
 }
 
 type apiPartParam struct {
@@ -156,6 +167,21 @@ type PartSummary struct {
 	MinimumStock float64 `json:"minimum_stock,omitempty"`
 	Location     string  `json:"location,omitempty"`
 	VariantCount int     `json:"variant_count,omitempty"`
+	// Tags say why a part may have come back for a word that appears nowhere
+	// else on the row. Without them, searching "qwiic" and being handed
+	// "SM04B-SRSS-TB" looks like the search misfired.
+	Tags []string `json:"tags,omitempty"`
+}
+
+func tagNames(in []apiTag) []string {
+	if len(in) == 0 {
+		return nil
+	}
+	out := make([]string, 0, len(in))
+	for _, t := range in {
+		out = append(out, t.Name)
+	}
+	return out
 }
 
 func toPartSummary(p apiPart) PartSummary {
@@ -171,6 +197,7 @@ func toPartSummary(p apiPart) PartSummary {
 		MinimumStock: p.MinimumStock,
 		Location:     deref(p.PrimaryLocation),
 		VariantCount: p.VariantCount,
+		Tags:         tagNames(p.Tags),
 	}
 }
 
@@ -258,6 +285,7 @@ type PartDetail struct {
 	IPN          string             `json:"ipn,omitempty"`
 	Package      string             `json:"package,omitempty"`
 	Keywords     string             `json:"keywords,omitempty"`
+	Tags         []string           `json:"tags,omitempty"`
 	Category     string             `json:"category,omitempty"`
 	CategoryID   string             `json:"category_id,omitempty"`
 	Barcode      string             `json:"barcode,omitempty"`
@@ -281,6 +309,7 @@ func toPartDetail(p apiPart, stock []apiStockItem) PartDetail {
 		IPN:          deref(p.IPN),
 		Package:      deref(p.Package),
 		Keywords:     deref(p.Keywords),
+		Tags:         tagNames(p.Tags),
 		Category:     deref(p.CategoryName),
 		CategoryID:   deref(p.CategoryID),
 		Barcode:      deref(p.Barcode),
