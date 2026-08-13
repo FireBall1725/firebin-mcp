@@ -9,11 +9,11 @@
 // v1 catalogue:
 //
 //	reads:  search_parts, get_part, list_locations, location_contents,
-//	        low_stock, inventory_stats, list_categories, stock_history,
-//	        recent_activity, lookup_mpn, list_projects, get_project,
-//	        pick_list
+//	        low_stock, inventory_stats, list_categories, list_tags,
+//	        stock_history, recent_activity, lookup_mpn, list_projects,
+//	        get_project, pick_list
 //	writes: scan_barcode, adjust_stock, move_stock, add_part_by_mpn,
-//	        update_part, create_location
+//	        update_part, tag_part, create_location
 //
 // Two constraints shape everything here.
 //
@@ -59,6 +59,12 @@ func RegisterAll(srv *mcp.Server, client *api.Client) {
 	AddSearchPartsBySpec(srv, client)
 	AddGetPart(srv, client)
 	AddUpdatePart(srv, client)
+
+	// Tags: the informal names a part answers to. tag_part adds and removes
+	// rather than replacing, because a caller told "call this one qwiic" does
+	// not know the rest of the set and would otherwise drop it.
+	AddListTags(srv, client)
+	AddTagPart(srv, client)
 
 	// Stock
 	AddLowStock(srv, client)

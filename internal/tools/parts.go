@@ -18,8 +18,9 @@ const defaultSearchLimit = 25
 // ─── search_parts ────────────────────────────────────────────────────────────
 
 type searchPartsArgs struct {
-	Query           string `json:"query,omitempty" jsonschema:"Text to match against part name, keywords, IPN, and manufacturer part number. Substring match, so prefer one short distinctive term ('MOC3063' or 'LM317') over a full sentence. Omit to list everything."`
+	Query           string `json:"query,omitempty" jsonschema:"Text to match against part name, keywords, IPN, manufacturer part number, and tags. Substring match, so prefer one short distinctive term ('MOC3063', 'LM317', 'Qwiic') over a full sentence. Omit to list everything."`
 	Category        string `json:"category,omitempty" jsonschema:"Category id (a UUID) to restrict the search to. Use list_categories to resolve a category name to its id."`
+	Tag             string `json:"tag,omitempty" jsonschema:"Return only parts carrying this tag, given by name or slug. Use list_tags to see what exists. Unlike query this is an exact tag match, not a substring test."`
 	Limit           int    `json:"limit,omitempty" jsonschema:"Maximum rows to return. Defaults to 25, capped at 200."`
 	IncludeVariants bool   `json:"include_variants,omitempty" jsonschema:"Include variant parts as their own rows. By default only top-level parts are returned and variants are counted in variant_count."`
 }
@@ -35,8 +36,9 @@ type searchPartsResult struct {
 func AddSearchParts(srv *mcp.Server, client *api.Client) {
 	mcp.AddTool(srv, &mcp.Tool{
 		Name: "search_parts",
-		Description: "Search the electronics inventory for parts by name, keywords, internal part number (IPN), or manufacturer part number (MPN). " +
+		Description: "Search the electronics inventory for parts by name, keywords, internal part number (IPN), manufacturer part number (MPN), or tag. " +
 			"Matching is a plain case-insensitive substring test with no ranking or fuzzy matching, so a short distinctive term works far better than a phrase. " +
+			"Tags are the informal names a part also answers to, so searching 'Qwiic' finds the JST SH connector tagged with it even though that word appears nowhere in its part number. " +
 			"Returns compact summaries including current stock and the bin it lives in; call get_part with a returned id for specs, distributor pricing, and the per-bin breakdown.",
 	}, func(ctx context.Context, _ *mcp.CallToolRequest, args searchPartsArgs) (*mcp.CallToolResult, searchPartsResult, error) {
 		limit := args.Limit
@@ -53,6 +55,12 @@ func AddSearchParts(srv *mcp.Server, client *api.Client) {
 		}
 		if c := strings.TrimSpace(args.Category); c != "" {
 			q.Set("category", c)
+		}
+		if t := strings.TrimSpace(args.Tag); t != "" {
+			q.Set("tag", t)
+			// A tag can sit on a variant, and answering "nothing carries that
+			// tag" because the default hides variants would be wrong.
+			q.Set("top_level", "false")
 		}
 		if args.IncludeVariants {
 			q.Set("top_level", "false")
