@@ -140,6 +140,12 @@ go run ./cmd/mcp
 
 Releases are cut from Actions, Release, Run workflow. That computes the next `YY.M.revision` from the last tag, builds the image for amd64 and arm64, pushes it to GHCR, and tags the commit. No version string is committed; local builds report `YY.M.DEV`.
 
+## Support
+
+Questions, updates, and works in progress: [FireBall Codes on Discord](https://discord.gg/QpV82CFfVD).
+
+If this saved you some time, you can [buy me a sushi roll](https://ko-fi.com/fireball1725).
+
 ## Licence
 
 AGPL-3.0-only. See [LICENSE](LICENSE).
